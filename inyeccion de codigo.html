@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="es-AR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vonharv — Simulador de Inyección de Código (Caso de Estudio IT)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'v-negro': '#070608',
+            'v-negro-2': '#0f0e13',
+            'v-card': '#141318',
+            'v-border': 'rgba(201, 162, 75, 0.25)',
+            'v-border-bright': 'rgba(201, 162, 75, 0.65)',
+            'v-oro': '#c9a24b',
+            'v-oro-light': '#dfbf79',
+            'v-marfil': '#e8e1d7',
+            'v-muted': '#a59e92',
+            'v-danger': '#ef4444',
+            'v-success': '#10b981',
+          },
+          fontFamily: {
+            serif: ['"Abhaya Libre"', 'Georgia', 'serif'],
+            sans: ['"Montserrat"', 'sans-serif'],
+            mono: ['"Fira Code"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estética Vonharv Premium */
+    body {
+      background-color: #070608;
+      color: #e8e1d7;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .font-serif-luxury {
+      font-family: 'Abhaya Libre', Georgia, serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(201, 162, 75, 0.3);
+      border-radius: 3px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(201, 162, 75, 0.6);
+    }
+    .glow-gold {
+      box-shadow: 0 0 25px rgba(201, 162, 75, 0.15);
+    }
+    .glow-danger {
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);
+    }
+    .glow-success {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-v-negro text-v-marfil antialiased selection:bg-v-oro selection:text-v-negro">
+
+  <!-- TOP BAR: Header Institucional & Navegación -->
+  <header class="border-b border-v-border bg-v-negro-2/90 backdrop-blur-md px-6 py-3 flex flex-wrap items-center justify-between gap-4 flex-shrink-0 z-30">
+    <div class="flex items-center gap-4">
+      <div class="h-10 w-10 rounded-full border border-v-oro/50 flex items-center justify-center bg-v-card text-v-oro font-serif text-xl font-bold shadow-inner">
+        V
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-serif-luxury text-2xl font-bold tracking-wider text-v-oro-light">VONHARV</span>
+          <span class="text-xs uppercase tracking-widest text-v-muted border-l border-v-border pl-2">Ingeniería de Software · Grupo 01</span>
+        </div>
+        <p class="text-[11px] text-v-muted">Demostrador en Vivo: Prevención de Inyección de Código (OWASP A03 / Ley 25.326)</p>
+      </div>
+    </div>
+
+    <!-- Pestañas de Navegación -->
+    <nav class="flex items-center gap-1 bg-v-card border border-v-border rounded-lg p-1" role="tablist">
+      <button id="tabBtnDemo" onclick="cambiarTab('demo')" class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 bg-v-oro text-v-negro shadow-md">
+        1. Demostración en Vivo (Split-Screen)
+      </button>
+      <button id="tabBtnDB" onclick="cambiarTab('db')" class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 text-v-muted hover:text-v-marfil hover:bg-white/5">
+        2. Base de Datos & Auditoría
+      </button>
+      <button id="tabBtnCode" onclick="cambiarTab('code')" class="px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 text-v-muted hover:text-v-marfil hover:bg-white/5">
+        3. Explicación de Código & Defensa Oral
+      </button>
+    </nav>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL DINÁMICO -->
+  <main class="flex-1 overflow-hidden relative">
+
+    <!-- ========================================================================================= -->
+    <!-- PESTAÑA 1: DEMOSTRACIÓN EN VIVO (SPLIT-SCREEN) -->
+    <!-- ========================================================================================= -->
+    <section id="panelDemo" class="h-full flex flex-col p-4 md:p-6 overflow-hidden">
+      <!-- Selector de Modo de Seguridad -->
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-4 bg-v-card border border-v-border p-3 rounded-xl flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="text-xs uppercase tracking-wider font-semibold text-v-muted">Modo de Procesamiento Backend:</span>
+          <div class="inline-flex rounded-lg border border-v-border bg-v-negro p-1">
+            <button id="btnModoVulnerable" onclick="setModoSeguridad(false)" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 bg-v-danger text-white shadow-sm">
+              <span class="h-2 w-2 rounded-full bg-white animate-pulse"></span>
+              Mala Práctica: Modo Vulnerable (Concatenación)
+            </button>
+            <button id="btnModoSeguro" onclick="setModoSeguridad(true)" class="flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 text-v-muted hover:text-v-marfil">
+              <span class="h-2 w-2 rounded-full bg-v-muted"></span>
+              Buena Práctica: Modo Seguro (Parametrizado)
+            </button>
+          </div>
+        </div>
+
+        <!-- Indicador contextual -->
+        <div id="statusBadge" class="text-xs px-3 py-1.5 rounded-full border border-red-500/40 bg-red-950/30 text-red-300 font-mono flex items-center gap-2">
+          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span>SQL sin sanear · Exposición crítica a SQLi & Stored XSS</span>
+        </div>
+      </div>
+
+      <!-- Split Screen Layout -->
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 overflow-hidden">
+
+        <!-- LADO IZQUIERDO: PORTAL CLIENTE (eventos.vonharv.com) -->
+        <div class="lg:col-span-5 flex flex-col bg-v-card border border-v-border rounded-2xl overflow-hidden shadow-2xl">
+          <!-- Browser Address Bar Mock -->
+          <div class="bg-v-negro-2 px-4 py-2 border-b border-v-border flex items-center gap-3">
+            <div class="flex gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+            </div>
+            <div class="flex-1 bg-v-negro px-3 py-1 rounded-md text-[11px] font-mono text-v-muted flex items-center justify-between border border-white/5">
+              <span class="flex items-center gap-1.5 text-v-oro">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                https://eventos.vonharv.com/#solicitar
+              </span>
+              <span class="text-[10px] text-v-muted/70">Público</span>
+            </div>
+          </div>
+
+          <!-- Formulario Vonharv con scroll -->
+          <div class="p-5 overflow-y-auto flex-1 custom-scroll space-y-4">
+            <div class="border-b border-v-border pb-3">
+              <span class="text-xs uppercase tracking-widest text-v-oro font-semibold">Formulario Web Público</span>
+              <h2 class="text-2xl font-serif-luxury font-bold text-v-marfil">Solicitá tu propuesta</h2>
+              <p class="text-xs text-v-muted">Completá los datos y recibí propuesta personalizada en menos de 24 hs.</p>
+            </div>
+
+            <!-- Botones de Inyección Rápida para la Defensa -->
+            <div class="bg-v-negro p-3 rounded-lg border border-v-border/70 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] uppercase tracking-wider font-semibold text-v-oro">Inyecciones Rápidas de Prueba:</span>
+                <span class="text-[10px] text-v-muted">Click para auto-cargar</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="cargarPayload('sqli_bypass')" class="text-left text-[11px] px-2.5 py-1.5 rounded bg-red-950/30 hover:bg-red-900/40 text-red-200 border border-red-800/40 truncate transition-colors">
+                  💥 SQLi: Extracción / Bypass
+                </button>
+                <button type="button" onclick="cargarPayload('sqli_drop')" class="text-left text-[11px] px-2.5 py-1.5 rounded bg-red-950/30 hover:bg-red-900/40 text-red-200 border border-red-800/40 truncate transition-colors">
+                  🔥 SQLi: DROP TABLE Destructivo
+                </button>
+                <button type="button" onclick="cargarPayload('xss_cookie')" class="text-left text-[11px] px-2.5 py-1.5 rounded bg-amber-950/30 hover:bg-amber-900/40 text-amber-200 border border-amber-800/40 truncate transition-colors">
+                  🍪 Stored XSS: Robo de Sesión
+                </button>
+                <button type="button" onclick="cargarPayload('normal')" class="text-left text-[11px] px-2.5 py-1.5 rounded bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-200 border border-emerald-800/40 truncate transition-colors">
+                  ✅ Consulta Legítima Cliente
+                </button>
+              </div>
+            </div>
+
+            <!-- Inputs del formulario -->
+            <form id="formPresupuesto" onsubmit="enviarFormulario(event)" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Tipo de Evento</label>
+                  <select id="fTipoEvento" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-1.5 text-xs text-v-marfil focus:border-v-oro focus:outline-none">
+                    <option>Casamiento</option>
+                    <option>Fiesta de 15</option>
+                    <option>Evento corporativo</option>
+                    <option>Evento social</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Fecha Estimada</label>
+                  <input type="date" id="fFecha" value="2026-11-20" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-1.5 text-xs text-v-marfil focus:border-v-oro focus:outline-none">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Invitados</label>
+                  <select id="fInvitados" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-1.5 text-xs text-v-marfil focus:border-v-oro focus:outline-none">
+                    <option>Hasta 100</option>
+                    <option>100 – 200</option>
+                    <option selected>200 – 350</option>
+                    <option>Más de 350</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Inversión Estimada</label>
+                  <select id="fInversion" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-1.5 text-xs text-v-marfil focus:border-v-oro focus:outline-none">
+                    <option>Entre US$15.000 y US$25.000</option>
+                    <option selected>Entre US$25.000 y US$35.000</option>
+                    <option>Más de US$35.000</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Nombre y Apellido</label>
+                <input type="text" id="fNombre" required placeholder="Nombre completo" value="María Florencia Gómez" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-2 text-xs text-v-marfil focus:border-v-oro focus:outline-none font-mono">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">WhatsApp</label>
+                  <input type="text" id="fWhatsapp" required placeholder="+54 9 221 ..." value="+5492215551234" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-2 text-xs text-v-marfil focus:border-v-oro focus:outline-none font-mono">
+                </div>
+                <div>
+                  <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Email</label>
+                  <input type="text" id="fEmail" required placeholder="tu@email.com" value="mfgomez@ejemplo.com.ar" class="w-full bg-v-negro border border-v-border rounded-md px-3 py-2 text-xs text-v-marfil focus:border-v-oro focus:outline-none font-mono">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] uppercase tracking-wider text-v-muted mb-1">Comentarios / Requisitos Especiales (Vector de Prueba)</label>
+                <textarea id="fComentarios" rows="3" placeholder="Requerimientos específicos del catering, ambientación..." class="w-full bg-v-negro border border-v-border rounded-md px-3 py-2 text-xs text-v-marfil focus:border-v-oro focus:outline-none font-mono">Requerimos catering apto celíaco para 15 personas.</textarea>
+              </div>
+
+              <button type="submit" id="btnSubmitForm" class="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-v-oro to-v-oro-light text-v-negro font-bold text-xs uppercase tracking-wider shadow-lg hover:brightness-110 active:scale-[0.99] transition-all">
+                Solicitar Disponibilidad y Presupuesto →
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- LADO DERECHO: BACKEND, MOTOR SQL & PANEL ADMINISTRATIVO -->
+        <div class="lg:col-span-7 flex flex-col gap-4 min-h-0 overflow-hidden">
+
+          <!-- 1. Visor de Construcción SQL en Tiempo Real -->
+          <div class="bg-v-card border border-v-border rounded-2xl p-4 flex flex-col">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-v-border">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-v-oro"></span>
+                <span class="text-xs uppercase tracking-wider font-semibold text-v-marfil">Monitor de Consulta SQL Backend</span>
+              </div>
+              <span id="badgeSqlType" class="text-[11px] font-mono px-2 py-0.5 rounded border border-red-500/50 bg-red-950/40 text-red-300">
+                Concatenación Directa Insegura (f-string)
+              </span>
+            </div>
+            <pre class="bg-v-negro p-3 rounded-lg border border-white/5 font-mono text-[11px] text-gray-300 overflow-x-auto custom-scroll leading-relaxed" id="sqlLivePreview">
+-- Esperando envío de solicitud desde el formulario...
+SELECT * FROM solicitudes_presupuesto WHERE 1=0;
+            </pre>
+          </div>
+
+          <!-- 2. Pantalla de CRM Administrativo / Detección XSS -->
+          <div class="flex-1 bg-v-card border border-v-border rounded-2xl p-4 flex flex-col min-h-0 overflow-hidden shadow-2xl">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-v-border flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-v-marfil">
+                  CRM Interno de Ventas Vonharv (Recepción de Leads)
+                </h3>
+              </div>
+              <span class="text-[11px] text-v-muted">Simulación de la vista del empleado de ventas</span>
+            </div>
+
+            <!-- Alerta visual si XSS tiene éxito -->
+            <div id="xssAlertBox" class="hidden mb-3 p-3 bg-red-950/80 border border-red-500 rounded-lg text-xs text-red-200 flex items-start gap-3 animate-bounce">
+              <span class="text-xl">⚠️</span>
+              <div>
+                <strong class="font-bold text-red-100">¡VULNERABILIDAD STORED XSS EJECUTADA EN EL PANEL DEL ADMIN!</strong>
+                <p class="text-[11px] text-red-300 mt-0.5">El script inyectado por el atacante se ejecutó en el navegador del operador comercial. Un atacante podría haber robado la cookie de sesión del administrador o los tokens bancarios.</p>
+              </div>
+            </div>
+
+            <!-- Tabla de visualización de registros recibidos -->
+            <div class="flex-1 overflow-auto custom-scroll border border-v-border/60 rounded-lg bg-v-negro">
+              <table class="w-full text-left text-[11px] border-collapse">
+                <thead class="bg-v-negro-2 text-v-oro uppercase text-[10px] tracking-wider sticky top-0 border-b border-v-border z-10">
+                  <tr>
+                    <th class="p-2.5">ID</th>
+                    <th class="p-2.5">Fecha Ev.</th>
+                    <th class="p-2.5">Cliente</th>
+                    <th class="p-2.5">Contacto</th>
+                    <th class="p-2.5">Comentarios / Payload Recibido</th>
+                    <th class="p-2.5">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaLeadsAdmin" class="divide-y divide-white/5 font-mono">
+                  <!-- Filas dinámicas generadas por JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Botones de acción rápida en panel admin -->
+            <div class="pt-3 mt-3 border-t border-v-border flex items-center justify-between text-xs text-v-muted flex-shrink-0">
+              <span>Registros en CRM: <strong id="contadorLeads" class="text-v-marfil font-mono">0</strong></span>
+              <button onclick="limpiarRegistros()" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-v-marfil rounded border border-v-border transition-colors text-[11px]">
+                Restablecer a Línea Base
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================================= -->
+    <!-- PESTAÑA 2: BASE DE DATOS & AUDITORÍA EN TIEMPO REAL -->
+    <!-- ========================================================================================= -->
+    <section id="panelDB" class="hidden h-full flex-col p-6 overflow-y-auto custom-scroll space-y-6">
+      
+      <!-- Encabezado de la pestaña -->
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-v-border pb-4">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-v-oro font-semibold">Gobernanza de Datos & Auditoría IT</span>
+          <h2 class="text-3xl font-serif-luxury font-bold text-v-marfil">Inspección de Base de Datos y Logs</h2>
+          <p class="text-xs text-v-muted">Visualización interna de tablas SQL y registro inmutable de eventos de seguridad (Ley 25.326).</p>
+        </div>
+        <button onclick="restaurarTodo()" class="px-4 py-2 rounded-lg bg-v-oro/20 hover:bg-v-oro/30 border border-v-oro text-v-oro-light text-xs font-semibold uppercase tracking-wider transition-all">
+          Restablecer Base de Datos a Estado Inicial
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Tabla 1: solicitudes_presupuesto -->
+        <div class="bg-v-card border border-v-border rounded-xl p-4 flex flex-col shadow-xl">
+          <div class="flex items-center justify-between pb-3 border-b border-v-border">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono bg-v-oro/10 text-v-oro px-2 py-0.5 rounded border border-v-oro/20">TABLA SQL</span>
+              <h3 class="text-sm font-bold font-mono text-v-marfil">solicitudes_presupuesto</h3>
+            </div>
+            <span class="text-[11px] text-v-muted">Registro público de cotizaciones</span>
+          </div>
+          <div class="mt-3 overflow-x-auto custom-scroll border border-white/5 rounded-lg">
+            <table class="w-full text-left text-[11px] font-mono">
+              <thead class="bg-v-negro-2 text-v-oro text-[10px] uppercase">
+                <tr>
+                  <th class="p-2 border-b border-white/10">id</th>
+                  <th class="p-2 border-b border-white/10">cliente</th>
+                  <th class="p-2 border-b border-white/10">whatsapp</th>
+                  <th class="p-2 border-b border-white/10">email</th>
+                  <th class="p-2 border-b border-white/10">inversion_usd</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyTablaPresupuestos" class="divide-y divide-white/5 bg-v-negro">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabla 2: usuarios_administracion (Objetivo de ataques SQLi) -->
+        <div class="bg-v-card border border-v-border rounded-xl p-4 flex flex-col shadow-xl">
+          <div class="flex items-center justify-between pb-3 border-b border-v-border">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-700/40">TABLA SENSIBLE</span>
+              <h3 class="text-sm font-bold font-mono text-v-marfil">usuarios_administracion</h3>
+            </div>
+            <span class="text-[11px] text-v-danger font-semibold">Acceso Restringido</span>
+          </div>
+          <div class="mt-3 overflow-x-auto custom-scroll border border-white/5 rounded-lg">
+            <table class="w-full text-left text-[11px] font-mono">
+              <thead class="bg-v-negro-2 text-red-300 text-[10px] uppercase">
+                <tr>
+                  <th class="p-2 border-b border-white/10">id</th>
+                  <th class="p-2 border-b border-white/10">usuario</th>
+                  <th class="p-2 border-b border-white/10">rol</th>
+                  <th class="p-2 border-b border-white/10">password_hash</th>
+                  <th class="p-2 border-b border-white/10">mfa_activo</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyTablaUsuarios" class="divide-y divide-white/5 bg-v-negro">
+                <!-- Usuarios administradores -->
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-v-muted mt-3">
+            * En un ataque SQL Injection por Union-Select, un atacante extrae los hashes de esta tabla aprovechando que el formulario no parametrizó la consulta.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Consola de Auditoría de Seguridad (Log inmutable) -->
+      <div class="bg-v-card border border-v-border rounded-xl p-4 flex flex-col shadow-xl">
+        <div class="flex items-center justify-between pb-3 border-b border-v-border">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-v-marfil">
+              Consola de Eventos de Seguridad & Logs SIEM (auditoria_seguridad_vonharv.log)
+            </h3>
+          </div>
+          <span class="text-[11px] text-v-muted">Estándar ISO/IEC 27001</span>
+        </div>
+
+        <div class="mt-3 bg-v-negro p-3 rounded-lg border border-white/10 font-mono text-xs text-gray-300 h-64 overflow-y-auto custom-scroll space-y-1.5" id="consolaLogs">
+          <!-- Logs generados dinámicamente -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================================= -->
+    <!-- PESTAÑA 3: EXPLICACIÓN DE CÓDIGO & GUÍA PARA LA DEFENSA ORAL -->
+    <!-- ========================================================================================= -->
+    <section id="panelCode" class="hidden h-full flex-col p-6 overflow-y-auto custom-scroll space-y-6">
+
+      <!-- Header -->
+      <div class="border-b border-v-border pb-4">
+        <span class="text-xs uppercase tracking-widest text-v-oro font-semibold">Material para la Exposición Oral</span>
+        <h2 class="text-3xl font-serif-luxury font-bold text-v-marfil">Comparativa de Código & Justificación de Ingeniería</h2>
+        <p class="text-xs text-v-muted">Análisis detallado de la vulnerabilidad en Python/SQLite y su remediación mediante buenas prácticas.</p>
+      </div>
+
+      <!-- Comparativa de Código lado a lado -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Columna 1: Mala Práctica -->
+        <div class="bg-v-card border border-red-500/40 rounded-xl overflow-hidden flex flex-col shadow-xl">
+          <div class="bg-red-950/40 px-4 py-3 border-b border-red-500/30 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-red-900/60 text-red-200 text-xs font-bold font-mono">MALA PRÁCTICA</span>
+              <span class="text-xs text-red-300 font-semibold font-mono">formulario_vulnerable.py</span>
+            </div>
+            <span class="text-[11px] text-red-400 font-bold">Vulnerable a SQLi & XSS</span>
+          </div>
+
+          <div class="p-4 bg-v-negro font-mono text-xs text-gray-300 overflow-x-auto custom-scroll leading-relaxed">
+<pre><span class="text-red-400 font-bold"># [FALLA 1]: Conexión sin manejo seguro ni validación</span>
+import sqlite3
+
+def guardar_presupuesto_vulnerable(tipo, fecha, nombre, comentarios):
+    conn = sqlite3.connect("vonharv.db")
+    cursor = conn.cursor()
+
+    <span class="text-red-400 font-bold"># [FALLA 2]: Concatenación directa de strings (f-string)
+    # Los datos del cliente se mezclan con el comando SQL del servidor.</span>
+    sql = <span class="text-amber-300">f"""
+        INSERT INTO solicitudes (tipo, fecha, nombre, notas)
+        VALUES ('{tipo}', '{fecha}', '{nombre}', '{comentarios}');
+    """</span>
+
+    <span class="text-red-400 font-bold"># [FALLA 3]: executescript permite múltiples sentencias (DROP, DELETE)</span>
+    cursor.executescript(sql)
+    conn.commit()
+    conn.close()
+
+<span class="text-gray-500"># Si el atacante envía:</span>
+<span class="text-amber-200"># nombre = "Juan', ''); DROP TABLE solicitudes; --"</span>
+<span class="text-red-400 font-bold"># El comando 'DROP TABLE' es ejecutado por el motor SQL sin filtro alguno.</span></pre>
+          </div>
+
+          <div class="p-4 bg-red-950/20 border-t border-red-500/20 text-xs text-red-200 space-y-1">
+            <strong>¿Por qué falla según la teoría de cátedra?</strong>
+            <p class="text-v-muted text-[11px]">No existe frontera lógica entre las instrucciones del desarrollador y la entrada del usuario. El parser de la base de datos compila e interpreta el texto inyectado como comandos con permisos del usuario de base de datos.</p>
+          </div>
+        </div>
+
+        <!-- Columna 2: Buena Práctica -->
+        <div class="bg-v-card border border-emerald-500/40 rounded-xl overflow-hidden flex flex-col shadow-xl">
+          <div class="bg-emerald-950/40 px-4 py-3 border-b border-emerald-500/30 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200 text-xs font-bold font-mono">BUENA PRÁCTICA</span>
+              <span class="text-xs text-emerald-300 font-semibold font-mono">formulario_seguro.py</span>
+            </div>
+            <span class="text-[11px] text-emerald-400 font-bold">Remediado con Estándares OWASP</span>
+          </div>
+
+          <div class="p-4 bg-v-negro font-mono text-xs text-gray-300 overflow-x-auto custom-scroll leading-relaxed">
+<pre><span class="text-emerald-400 font-bold"># [CONTROL 1]: Sanitización HTML y Expresiones Regulares</span>
+import sqlite3, html, re
+
+REGEX_NOMBRE = re.compile(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'.-]{2,80}$")
+
+def guardar_presupuesto_seguro(tipo, fecha, nombre, comentarios):
+    <span class="text-emerald-400 font-bold"># Defensa por lista blanca y regex</span>
+    if not REGEX_NOMBRE.match(nombre):
+        raise ValueError("Nombre con formato inválido")
+
+    <span class="text-emerald-400 font-bold"># Sanitización contra XSS (convierte &lt;, &gt;, &amp; en entidades inofensivas)</span>
+    comentarios_limpios = html.escape(comentarios.strip())
+
+    with sqlite3.connect("vonharv.db") as conn:
+        cursor = conn.cursor()
+
+        <span class="text-emerald-400 font-bold"># [CONTROL 2]: Consulta Parametrizada (Prepared Statement)
+        # Los marcadores '?' separan el comando de los datos.</span>
+        sql = <span class="text-emerald-300">"""
+            INSERT INTO solicitudes (tipo, fecha, nombre, notas)
+            VALUES (?, ?, ?, ?);
+        """</span>
+        
+        <span class="text-emerald-400 font-bold"># [CONTROL 3]: El driver envía los parámetros por canal aislado</span>
+        cursor.execute(sql, (tipo, fecha, nombre, comentarios_limpios))
+        conn.commit()</pre>
+          </div>
+
+          <div class="p-4 bg-emerald-950/20 border-t border-emerald-500/20 text-xs text-emerald-200 space-y-1">
+            <strong>¿Por qué es invulnerable?</strong>
+            <p class="text-v-muted text-[11px]">La consulta SQL se precompila en el motor de base de datos antes de recibir los valores. Incluso si el atacante envía un comando <code>DROP TABLE</code>, el motor lo procesa estrictamente como una cadena literal de texto.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tarjetas de Preguntas Clave para Responder a la Profesora en la Defensa -->
+      <div class="bg-v-card border border-v-border rounded-xl p-5 shadow-2xl">
+        <h3 class="font-serif-luxury text-xl font-bold text-v-oro mb-4">
+          Argumentos Clave para la Defensa Oral frente a la Profesora
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="bg-v-negro p-4 rounded-lg border border-v-border/60">
+            <h4 class="font-bold text-v-oro-light mb-1">1. ¿Por qué validar en el Frontend no es suficiente?</h4>
+            <p class="text-v-muted leading-relaxed">
+              Cualquier validación en JavaScript del navegador puede ser evadida deshabilitando scripts, usando herramientas como <em>Burp Suite</em>, <em>Postman</em> o enviando peticiones directas vía <code>curl</code>. <strong>La seguridad obligatoria debe residir en el backend</strong>.
+            </p>
+          </div>
+
+          <div class="bg-v-negro p-4 rounded-lg border border-v-border/60">
+            <h4 class="font-bold text-v-oro-light mb-1">2. ¿Qué normativa legal y estándar internacional aplica?</h4>
+            <p class="text-v-muted leading-relaxed">
+              Aplica la <strong>Ley 25.326 de Protección de Datos Personales</strong> (responsabilidad legal de Vonharv) y el estándar internacional <strong>OWASP Top 10 (A03: Injection y A07: XSS)</strong> e <strong>ISO/IEC 27034</strong> (seguridad en el ciclo de vida del software).
+            </p>
+          </div>
+
+          <div class="bg-v-negro p-4 rounded-lg border border-v-border/60">
+            <h4 class="font-bold text-v-oro-light mb-1">3. Rol del Grupo 01 como Consultor de IT</h4>
+            <p class="text-v-muted leading-relaxed">
+              Como consultores externos, el Grupo 01 <strong>no programa los sitios web de Vonharv</strong>, sino que genera las especificaciones técnicas obligatorias y las cláusulas de SLA para auditar a la agencia web tercerizada mediante auditorías SAST y DAST.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL DE EJECUCIÓN XSS (Simula la alerta en el navegador del administrador) -->
+  <div id="modalXssExecution" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-v-card border-2 border-red-500 rounded-2xl max-w-lg w-full p-6 shadow-2xl glow-danger text-center animate-scale-in">
+      <div class="w-16 h-16 bg-red-950/60 border border-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+        🚨
+      </div>
+      <span class="text-xs uppercase tracking-widest text-red-400 font-bold">Simulación de Ataque Exitosa</span>
+      <h3 class="text-2xl font-serif-luxury font-bold text-white mt-1">Stored Cross-Site Scripting (XSS)</h3>
+      <p class="text-xs text-gray-300 mt-2 leading-relaxed">
+        El payload inyectado desde el formulario público fue renderizado en el navegador del operador comercial sin sanitizar:
+      </p>
+      
+      <div class="bg-v-negro p-3 rounded-lg border border-red-800/50 my-4 text-left font-mono text-[11px] text-red-300 break-all">
+        <div class="text-[10px] text-gray-500 mb-1">// Script JavaScript ejecutado en el contexto del Admin:</div>
+        alert("XSS: Cookie de Sesión Robada: session_token=vnh_admin_9921_secret");
+      </div>
+
+      <div class="bg-red-900/20 border border-red-500/30 p-2.5 rounded-lg text-left text-[11px] text-red-200 mb-5">
+        <strong>Impacto Crítico:</strong> El atacante obtuvo la cookie de sesión del administrador comercial de Vonharv, logrando acceso sin contraseña al panel de reservas y contratos.
+      </div>
+
+      <button onclick="cerrarModalXss()" class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
+        Cerrar Alerta y Ver Registro en Panel
+      </button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT: Lógica de Simulación, Base de Datos en Memoria y Renderizado -->
+  <script>
+    // ESTADO GLOBAL DE LA APLICACIÓN
+    let MODO_SEGURO = false; // Por defecto inicia en Modo Vulnerable para la demo
+    let idContador = 101;
+
+    // Base de datos en memoria para la simulación
+    let dbPresupuestos = [
+      {
+        id: 1,
+        tipo: 'Casamiento',
+        fecha: '2026-11-15',
+        invitados: '200 – 350',
+        inversion: 'Entre US$25.000 y US$35.000',
+        nombre: 'Sofía Martínez',
+        whatsapp: '+5492214981122',
+        email: 'sofia.martinez@ejemplo.com',
+        comentarios: 'Requerimos catering tradicional y barra libre premium.',
+        esAtaque: false
+      },
+      {
+        id: 2,
+        tipo: 'Evento corporativo',
+        fecha: '2026-12-02',
+        invitados: 'Más de 350',
+        inversion: 'Más de US$35.000',
+        nombre: 'Tech Corp S.A.',
+        whatsapp: '+5491143219876',
+        email: 'eventos@techcorp.com.ar',
+        comentarios: 'Conferencia anual de tecnología en el Gran Foyer con streaming.',
+        esAtaque: false
+      }
+    ];
+
+    let dbUsuariosAdmin = [
+      { id: 1, usuario: 'admin_general', rol: 'Dirección', hash: '$2b$12$e8x...T9qK (bcrypt)', mfa: 'Activo' },
+      { id: 2, usuario: 'lcuomo_ventas', rol: 'Comercial', hash: '$2b$12$K8w...P2mL (bcrypt)', mfa: 'Activo' },
+      { id: 3, usuario: 'operador_salon1', rol: 'Producción', hash: '$2b$12$R1q...Z4vX (bcrypt)', mfa: 'Inactivo' }
+    ];
+
+    let logsAuditoria = [
+      {
+        timestamp: '2026-11-08 10:14:02',
+        ip: '181.44.120.15',
+        evento: 'Inicialización de servicio web',
+        severidad: 'INFO',
+        detalle: 'Conexión a base de datos de producción validada.'
+      }
+    ];
+
+    // GESTIÓN DE PESTAÑAS
+    function cambiarTab(tab) {
+      const panelDemo = document.getElementById('panelDemo');
+      const panelDB = document.getElementById('panelDB');
+      const panelCode = document.getElementById('panelCode');
+
+      const btnDemo = document.getElementById('tabBtnDemo');
+      const btnDB = document.getElementById('tabBtnDB');
+      const btnCode = document.getElementById('tabBtnCode');
+
+      // Ocultar todos
+      panelDemo.classList.add('hidden');
+      panelDB.classList.add('hidden');
+      panelCode.classList.add('hidden');
+
+      // Resetear estilos botones
+      [btnDemo, btnDB, btnCode].forEach(btn => {
+        btn.className = 'px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 text-v-muted hover:text-v-marfil hover:bg-white/5';
+      });
+
+      if (tab === 'demo') {
+        panelDemo.classList.remove('hidden');
+        btnDemo.className = 'px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 bg-v-oro text-v-negro shadow-md';
+      } else if (tab === 'db') {
+        panelDB.classList.remove('hidden');
+        panelDB.classList.add('flex');
+        btnDB.className = 'px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 bg-v-oro text-v-negro shadow-md';
+        renderizarTablasDB();
+      } else if (tab === 'code') {
+        panelCode.classList.remove('hidden');
+        panelCode.classList.add('flex');
+        btnCode.className = 'px-4 py-2 text-xs uppercase tracking-wider font-semibold rounded-md transition-all duration-200 bg-v-oro text-v-negro shadow-md';
+      }
+    }
+
+    // TOGGLE MODO DE SEGURIDAD
+    function setModoSeguridad(esSeguro) {
+      MODO_SEGURO = esSeguro;
+      const btnVuln = document.getElementById('btnModoVulnerable');
+      const btnSeg = document.getElementById('btnModoSeguro');
+      const badge = document.getElementById('statusBadge');
+      const badgeSql = document.getElementById('badgeSqlType');
+
+      if (esSeguro) {
+        btnSeg.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 bg-v-success text-white shadow-sm';
+        btnSeg.querySelector('span').className = 'h-2 w-2 rounded-full bg-white animate-pulse';
+
+        btnVuln.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 text-v-muted hover:text-v-marfil';
+        btnVuln.querySelector('span').className = 'h-2 w-2 rounded-full bg-v-muted';
+
+        badge.className = 'text-xs px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-mono flex items-center gap-2';
+        badge.innerHTML = `
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>Modo Seguro Activo · Consultas Parametrizadas (Prepared Statements) & Sanitización</span>
+        `;
+        badgeSql.className = 'text-[11px] font-mono px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-950/40 text-emerald-300';
+        badgeSql.textContent = 'Prepared Statement Parametrizado (?)';
+      } else {
+        btnVuln.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 bg-v-danger text-white shadow-sm';
+        btnVuln.querySelector('span').className = 'h-2 w-2 rounded-full bg-white animate-pulse';
+
+        btnSeg.className = 'flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 text-v-muted hover:text-v-marfil';
+        btnSeg.querySelector('span').className = 'h-2 w-2 rounded-full bg-v-muted';
+
+        badge.className = 'text-xs px-3 py-1.5 rounded-full border border-red-500/40 bg-red-950/30 text-red-300 font-mono flex items-center gap-2';
+        badge.innerHTML = `
+          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span>SQL sin sanear · Exposición crítica a SQLi & Stored XSS</span>
+        `;
+        badgeSql.className = 'text-[11px] font-mono px-2 py-0.5 rounded border border-red-500/50 bg-red-950/40 text-red-300';
+        badgeSql.textContent = 'Concatenación Directa Insegura (f-string)';
+      }
+
+      // Actualizar preview con el formulario actual
+      actualizarLiveSqlPreview();
+    }
+
+    // CARGA DE PAYLOADS DE ATAQUE RÁPIDO
+    function cargarPayload(tipo) {
+      const fNombre = document.getElementById('fNombre');
+      const fEmail = document.getElementById('fEmail');
+      const fWhatsapp = document.getElementById('fWhatsapp');
+      const fComentarios = document.getElementById('fComentarios');
+
+      if (tipo === 'sqli_bypass') {
+        fNombre.value = "Juan') UNION SELECT 999, 'Bypass Admin', 'hacked@root.com', 'HASH_EXTRACTED_MD5', 'USD 999999'; --";
+        fEmail.value = "infiltrado@exploit.ar";
+        fWhatsapp.value = "+5492210009999";
+        fComentarios.value = "Intento de extracción de datos sensibles mediante inyección SQL UNION SELECT.";
+      } else if (tipo === 'sqli_drop') {
+        fNombre.value = "Carlos Gomez'); DROP TABLE solicitudes_presupuesto; --";
+        fEmail.value = "carlos@gmail.com";
+        fWhatsapp.value = "+5492214445555";
+        fComentarios.value = "Payload destructivo orientado a dar de baja la tabla de presupuestos de Vonharv.";
+      } else if (tipo === 'xss_cookie') {
+        fNombre.value = "Lautaro Benítez";
+        fEmail.value = "lautaro@evento.com";
+        fWhatsapp.value = "+5492217778888";
+        fComentarios.value = "<script>alert('ALERTA XSS: Cookie de sesión Admin Robada: ' + document.cookie);<\/script>";
+      } else if (tipo === 'normal') {
+        fNombre.value = "María Florencia Gómez";
+        fEmail.value = "mfgomez@ejemplo.com.ar";
+        fWhatsapp.value = "+5492215551234";
+        fComentarios.value = "Requerimos catering apto celíaco para 15 personas y traslado en Sprinter.";
+      }
+
+      actualizarLiveSqlPreview();
+    }
+
+    // ACTUALIZAR PREVIEW SQL
+    function actualizarLiveSqlPreview() {
+      const sqlBox = document.getElementById('sqlLivePreview');
+      const tipo = document.getElementById('fTipoEvento').value;
+      const fecha = document.getElementById('fFecha').value;
+      const invitados = document.getElementById('fInvitados').value;
+      const inversion = document.getElementById('fInversion').value;
+      const nombre = document.getElementById('fNombre').value;
+      const whatsapp = document.getElementById('fWhatsapp').value;
+      const email = document.getElementById('fEmail').value;
+      const notas = document.getElementById('fComentarios').value;
+
+      if (!MODO_SEGURO) {
+        // Concatenación vulnerable
+        sqlBox.innerHTML = `
+<span class="text-blue-400 font-bold">INSERT INTO</span> solicitudes_presupuesto 
+  (tipo_evento, fecha_estimada, rango_invitados, inversion_usd, nombre_cliente, whatsapp, email, notas)
+<span class="text-blue-400 font-bold">VALUES</span> (
+  <span class="text-amber-300">'${escapeHtml(tipo)}'</span>, 
+  <span class="text-amber-300">'${escapeHtml(fecha)}'</span>, 
+  <span class="text-amber-300">'${escapeHtml(invitados)}'</span>, 
+  <span class="text-amber-300">'${escapeHtml(inversion)}'</span>, 
+  <span class="text-red-400 font-bold bg-red-950/80 px-1">'${escapeHtml(nombre)}'</span>, 
+  <span class="text-amber-300">'${escapeHtml(whatsapp)}'</span>, 
+  <span class="text-amber-300">'${escapeHtml(email)}'</span>, 
+  <span class="text-red-400 font-bold bg-red-950/80 px-1">'${escapeHtml(notas)}'</span>
+);
+<span class="text-red-400">// ALERTA: Texto concatenado directamente. Si el input contiene comillas (') rompe la sintaxis y ejecuta código.</span>`;
+      } else {
+        // Consulta parametrizada
+        sqlBox.innerHTML = `
+<span class="text-emerald-400 font-bold">-- 1. CONSULTA PREPARADA (Prepared Statement)</span>
+<span class="text-blue-400 font-bold">INSERT INTO</span> solicitudes_presupuesto 
+  (tipo_evento, fecha_estimada, rango_invitados, inversion_usd, nombre_cliente, whatsapp, email, notas)
+<span class="text-blue-400 font-bold">VALUES</span> (<span class="text-emerald-400 font-bold">?, ?, ?, ?, ?, ?, ?, ?</span>);
+
+<span class="text-emerald-400 font-bold">-- 2. TUPLA DE PARÁMETROS ENLAZADOS DE FORMA SEGURA (Driver BIND):</span>
+parámetros = (
+  <span class="text-amber-300">"${escapeHtml(tipo)}"</span>,
+  <span class="text-amber-300">"${escapeHtml(fecha)}"</span>,
+  <span class="text-amber-300">"${escapeHtml(invitados)}"</span>,
+  <span class="text-amber-300">"${escapeHtml(inversion)}"</span>,
+  <span class="text-emerald-300 font-semibold">"${escapeHtml(nombre)}"</span>,
+  <span class="text-amber-300">"${escapeHtml(whatsapp)}"</span>,
+  <span class="text-amber-300">"${escapeHtml(email)}"</span>,
+  <span class="text-emerald-300 font-semibold">"${escapeHtml(notas)}"</span>
+);
+<span class="text-emerald-400">// SEGURO: Los valores viajan como literales independientes. El motor SQL no los compila como sentencias.</span>`;
+      }
+    }
+
+    // ESCUCHAR CAMBIOS EN TIEMPO REAL EN LOS INPUTS
+    document.addEventListener("DOMContentLoaded", () => {
+      ['fTipoEvento', 'fFecha', 'fInvitados', 'fInversion', 'fNombre', 'fWhatsapp', 'fEmail', 'fComentarios'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', actualizarLiveSqlPreview);
+          el.addEventListener('change', actualizarLiveSqlPreview);
+        }
+      });
+      renderizarCRMAdmin();
+      actualizarLiveSqlPreview();
+    });
+
+    // PROCESAMIENTO DEL FORMULARIO (SIMULADOR DE ENVÍO)
+    function enviarFormulario(event) {
+      event.preventDefault();
+
+      const tipo = document.getElementById('fTipoEvento').value;
+      const fecha = document.getElementById('fFecha').value;
+      const invitados = document.getElementById('fInvitados').value;
+      const inversion = document.getElementById('fInversion').value;
+      const nombre = document.getElementById('fNombre').value;
+      const whatsapp = document.getElementById('fWhatsapp').value;
+      const email = document.getElementById('fEmail').value;
+      const comentarios = document.getElementById('fComentarios').value;
+
+      const contieneSqlPayload = nombre.includes(";") || nombre.includes("--") || nombre.includes("UNION") || comentarios.includes(";");
+      const contieneXssPayload = comentarios.toLowerCase().includes("<script>") || nombre.toLowerCase().includes("<script>");
+
+      const fechaHoraActual = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+      if (!MODO_SEGURO) {
+        // === MALA PRÁCTICA: MODO VULNERABLE ===
+        if (contieneSqlPayload) {
+          // Simulación de ataque SQL Injection destructivo o de extracción
+          if (nombre.includes("DROP TABLE") || comentarios.includes("DROP TABLE")) {
+            // Eliminar tabla
+            dbPresupuestos = [];
+            registrarLog(fechaHoraActual, '181.44.120.98', 'ATAQUE CRÍTICO: SQL Injection ejecutado exitosamente', 'CRITICAL', 'Comando DROP TABLE ejecutado. Tabla solicitudes_presupuesto destruida.');
+            renderizarCRMAdmin();
+            alert("💥 [SIMULACIÓN EXPLOIT] La base de datos ejecutó: DROP TABLE solicitudes_presupuesto;\n\nTodos los registros de clientes han sido borrados de la memoria del servidor.");
+            return;
+          }
+
+          if (nombre.includes("UNION SELECT")) {
+            // Inyección de registros espurios extraídos
+            dbPresupuestos.unshift({
+              id: 999,
+              tipo: 'BYPASS_SQLi',
+              fecha: fecha,
+              invitados: 'N/A',
+              inversion: 'USD 999.999',
+              nombre: '<span class="text-red-400 font-bold font-mono">ROOT_ADMIN_EXFILTRATED</span>',
+              whatsapp: '+5490000000',
+              email: 'hacked_database@darkweb.cc',
+              comentarios: 'HASH: $2b$12$e8x...T9qK | TARJETA VISA: 4509-XXXX-XXXX-1122',
+              esAtaque: true
+            });
+            registrarLog(fechaHoraActual, '181.44.120.98', 'ATAQUE CRÍTICO: SQL Injection UNION SELECT detectado', 'CRITICAL', 'Exfiltración de credenciales administrativas por inyección de código.');
+            renderizarCRMAdmin();
+            return;
+          }
+        }
+
+        // Si contiene script XSS y estamos en modo vulnerable: disparar alerta XSS
+        if (contieneXssPayload) {
+          document.getElementById('xssAlertBox').classList.remove('hidden');
+          document.getElementById('modalXssExecution').classList.remove('hidden');
+          registrarLog(fechaHoraActual, '190.220.10.45', 'ATAQUE ALTO: Stored Cross-Site Scripting (XSS) ejecutado', 'HIGH', 'Script embebido <script> almacenado en base de datos sin sanitizar.');
+        }
+
+        // Guardar sin sanear en la base de datos
+        dbPresupuestos.unshift({
+          id: ++idContador,
+          tipo,
+          fecha,
+          invitados,
+          inversion,
+          nombre: nombre, // Vulnerable a renderizado
+          whatsapp,
+          email,
+          comentarios: comentarios, // Vulnerable a renderizado
+          esAtaque: contieneSqlPayload || contieneXssPayload
+        });
+
+        registrarLog(fechaHoraActual, '181.44.120.15', 'Solicitud recibida (Modo Inseguro)', 'WARNING', `Lead guardado mediante concatenación: ${email}`);
+
+      } else {
+        // === BUENA PRÁCTICA: MODO SEGURO ===
+        // 1. Validación de regex sobre nombre
+        const regexNombre = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'.-]{2,80}$/;
+        if (contieneSqlPayload && !regexNombre.test(nombre)) {
+          registrarLog(fechaHoraActual, '181.44.120.98', 'BLOQUEO PREVENTIVO: Caracteres no permitidos por Lista Blanca', 'INFO', `Payload en campo nombre bloqueado por Regex en backend.`);
+          alert("🛡️ [BUENA PRÁCTICA ACTIVADA]\n\nLa capa 1 de validación por listas blancas (Regex) del backend bloqueó los caracteres ilegales del campo nombre.\n\nEl intento de inyección no llegó al motor SQL.");
+          return;
+        }
+
+        // 2. Sanitización contra XSS usando html.escape
+        const comentariosSanitizados = escapeHtml(comentarios);
+        const nombreSanitizado = escapeHtml(nombre);
+
+        document.getElementById('xssAlertBox').classList.add('hidden');
+
+        dbPresupuestos.unshift({
+          id: ++idContador,
+          tipo,
+          fecha,
+          invitados,
+          inversion,
+          nombre: nombreSanitizado,
+          whatsapp,
+          email,
+          comentarios: comentariosSanitizados,
+          esAtaque: false
+        });
+
+        if (contieneXssPayload) {
+          registrarLog(fechaHoraActual, '190.220.10.45', 'MITIGACIÓN XSS: Etiquetas neutralizadas exitosamente', 'INFO', 'Etiquetas script convertidas a entidades HTML inofensivas (&lt;script&gt;).');
+          alert("🛡️ [BUENA PRÁCTICA ACTIVADA]\n\nEl payload XSS fue sanitizado con éxito mediante html.escape().\n\nEl script se guardó como texto inofensivo y NO se ejecutó en el navegador del operador comercial.");
+        } else {
+          registrarLog(fechaHoraActual, '181.44.120.15', 'Solicitud recibida (Modo Seguro)', 'INFO', `Lead insertado con Prepared Statement: ${email}`);
+        }
+      }
+
+      renderizarCRMAdmin();
+    }
+
+    // UTILITARIO DE ESCAPE HTML (Buena Práctica)
+    function escapeHtml(texto) {
+      if (!texto) return '';
+      return texto
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // RENDERIZAR TABLA EN CRM DEL ADMIN
+    function renderizarCRMAdmin() {
+      const tbody = document.getElementById('tablaLeadsAdmin');
+      const contador = document.getElementById('contadorLeads');
+      tbody.innerHTML = '';
+      contador.textContent = dbPresupuestos.length;
+
+      if (dbPresupuestos.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-6 text-center text-red-400 font-mono">
+              ⚠️ [TABLA VACÍA / INEXISTENTE]: La tabla fue eliminada tras la inyección SQL 'DROP TABLE'.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      dbPresupuestos.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.className = p.esAtaque ? 'bg-red-950/20 hover:bg-red-950/40' : 'hover:bg-white/5';
+
+        // En modo vulnerable, permitimos que el navegador interprete innerHTML directo (recreando el XSS real).
+        // En modo seguro, los datos ya están escapados.
+        tr.innerHTML = `
+          <td class="p-2.5 text-v-muted font-bold">${p.id}</td>
+          <td class="p-2.5 text-v-marfil whitespace-nowrap">${escapeHtml(p.fecha)}</td>
+          <td class="p-2.5 font-semibold text-v-oro-light">${p.nombre}</td>
+          <td class="p-2.5 text-v-muted text-[10px]">${escapeHtml(p.whatsapp)}<br>${escapeHtml(p.email)}</td>
+          <td class="p-2.5 text-gray-300 max-w-xs break-all">${p.comentarios}</td>
+          <td class="p-2.5">
+            <span class="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider ${p.esAtaque ? 'bg-red-900/60 text-red-200 border border-red-500/50' : 'bg-emerald-950 text-emerald-300 border border-emerald-700/40'}">
+              ${p.esAtaque ? 'Anomalía' : 'Recibido'}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // RENDERIZAR VISTAS EN PESTAÑA 2 (DB & LOGS)
+    function renderizarTablasDB() {
+      // 1. Tabla Presupuestos
+      const tbodyP = document.getElementById('tbodyTablaPresupuestos');
+      tbodyP.innerHTML = '';
+      dbPresupuestos.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2 font-bold text-v-muted">${p.id}</td>
+          <td class="p-2 text-v-marfil">${escapeHtml(p.nombre)}</td>
+          <td class="p-2 text-gray-400">${escapeHtml(p.whatsapp)}</td>
+          <td class="p-2 text-gray-400">${escapeHtml(p.email)}</td>
+          <td class="p-2 text-v-oro">${escapeHtml(p.inversion)}</td>
+        `;
+        tbodyP.appendChild(tr);
+      });
+
+      // 2. Tabla Usuarios Admin
+      const tbodyU = document.getElementById('tbodyTablaUsuarios');
+      tbodyU.innerHTML = '';
+      dbUsuariosAdmin.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2 text-v-muted">${u.id}</td>
+          <td class="p-2 font-bold text-v-marfil">${u.usuario}</td>
+          <td class="p-2 text-v-oro">${u.rol}</td>
+          <td class="p-2 text-xs text-red-300/80">${u.hash}</td>
+          <td class="p-2 text-emerald-400 font-semibold">${u.mfa}</td>
+        `;
+        tbodyU.appendChild(tr);
+      });
+
+      // 3. Consola de Logs
+      renderizarConsolaLogs();
+    }
+
+    function renderizarConsolaLogs() {
+      const consola = document.getElementById('consolaLogs');
+      consola.innerHTML = '';
+      logsAuditoria.forEach(l => {
+        let badgeColor = 'text-blue-400 bg-blue-950/40 border-blue-800';
+        if (l.severidad === 'CRITICAL') badgeColor = 'text-red-300 bg-red-950 border-red-500 font-bold';
+        if (l.severidad === 'HIGH') badgeColor = 'text-orange-300 bg-orange-950 border-orange-600';
+        if (l.severidad === 'WARNING') badgeColor = 'text-amber-300 bg-amber-950 border-amber-600';
+
+        const p = document.createElement('p');
+        p.className = 'border-l-2 pl-2 ' + (l.severidad === 'CRITICAL' ? 'border-red-500 bg-red-950/20' : 'border-white/10');
+        p.innerHTML = `
+          <span class="text-v-muted">[${l.timestamp}]</span>
+          <span class="px-1.5 py-0.2 rounded border text-[10px] ${badgeColor}">${l.severidad}</span>
+          <span class="text-v-oro">IP:${l.ip}</span>
+          <span class="font-semibold text-v-marfil">${l.evento}</span> - 
+          <span class="text-gray-400">${l.detalle}</span>
+        `;
+        consola.appendChild(p);
+      });
+    }
+
+    function registrarLog(timestamp, ip, evento, severidad, detalle) {
+      logsAuditoria.unshift({ timestamp, ip, evento, severidad, detalle });
+      renderizarConsolaLogs();
+    }
+
+    function cerrarModalXss() {
+      document.getElementById('modalXssExecution').classList.add('hidden');
+    }
+
+    function limpiarRegistros() {
+      restaurarTodo();
+      alert("Línea base restaurada: registros de prueba reseteados.");
+    }
+
+    function restaurarTodo() {
+      dbPresupuestos = [
+        {
+          id: 1,
+          tipo: 'Casamiento',
+          fecha: '2026-11-15',
+          invitados: '200 – 350',
+          inversion: 'Entre US$25.000 y US$35.000',
+          nombre: 'Sofía Martínez',
+          whatsapp: '+5492214981122',
+          email: 'sofia.martinez@ejemplo.com',
+          comentarios: 'Requerimos catering tradicional y barra libre premium.',
+          esAtaque: false
+        },
+        {
+          id: 2,
+          tipo: 'Evento corporativo',
+          fecha: '2026-12-02',
+          invitados: 'Más de 350',
+          inversion: 'Más de US$35.000',
+          nombre: 'Tech Corp S.A.',
+          whatsapp: '+5491143219876',
+          email: 'eventos@techcorp.com.ar',
+          comentarios: 'Conferencia anual de tecnología en el Gran Foyer con streaming.',
+          esAtaque: false
+        }
+      ];
+      document.getElementById('xssAlertBox').classList.add('hidden');
+      renderizarCRMAdmin();
+      renderizarTablasDB();
+      actualizarLiveSqlPreview();
+    }
+  </script>
+
+</body>
+</html>
